@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EOQ Warehouse Challenge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one phone-width column on a concrete floor; a hazard stripe marks the top, one card per step. */
+:root{
+  color-scheme: light;
+  --floor:#e9ecee; --card:#ffffff; --ink:#14202b; --muted:#566573;
+  --steel:#24506d; --mark:#f5b700; --line:#cfd6db;
+  --good:#1c7f55; --bad:#c23b2a;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--floor);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45}
+.stripe{height:10px;background:repeating-linear-gradient(-45deg,var(--mark) 0 14px,var(--ink) 14px 28px)}
+main{max-width:540px;margin:0 auto;padding:16px 16px 40px;display:flex;flex-direction:column;gap:14px}
+h1,h2{font-family:var(--display);font-weight:700;line-height:1.05;margin:0;text-wrap:balance;text-transform:uppercase;letter-spacing:.01em}
+h1{font-size:2.6rem} h2{font-size:1.7rem}
+p{margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.eyebrow{font-family:var(--display);font-weight:600;font-size:1rem;letter-spacing:.08em;text-transform:uppercase;color:var(--steel)}
+.muted{color:var(--muted);font-size:.92rem}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:10px;font-variant-numeric:tabular-nums}
+.hud b{font-family:var(--display);font-size:1.35rem}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--steel);width:100%}
+.bar i.low{background:var(--bad)}
+.data{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.data div{background:var(--floor);border-radius:8px;padding:8px 10px}
+.data span{display:block;font-size:.78rem;color:var(--muted)}
+.data strong{font-variant-numeric:tabular-nums;font-size:1.05rem}
+button,.btn{font:600 1.02rem var(--body);border-radius:8px;border:2px solid var(--ink);background:var(--mark);color:var(--ink);padding:13px 16px;cursor:pointer;text-align:center;text-decoration:none;display:block;width:100%}
+button:focus-visible,.btn:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--steel);outline-offset:2px}
+button[disabled]{opacity:.5;cursor:default}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{background:var(--card);border:2px solid var(--line);text-align:left;font-weight:500}
+.opt.right{border-color:var(--good);background:#e5f4ec}
+.opt.wrong{border-color:var(--bad);background:#fbe9e6}
+input[type=text],input[type=number]{font:500 1.15rem var(--body);width:100%;padding:12px;border:2px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+label{font-weight:600;font-size:.95rem}
+.field{display:flex;flex-direction:column;gap:6px}
+.verdict{font-family:var(--display);font-weight:700;font-size:2.2rem;text-transform:uppercase;line-height:1}
+.verdict.good{color:var(--good)} .verdict.bad{color:var(--bad)}
+.big{font-family:var(--display);font-weight:700;font-size:4rem;line-height:1;font-variant-numeric:tabular-nums}
+.code{font:600 1.5rem ui-monospace,Menlo,Consolas,monospace;letter-spacing:.12em;background:var(--floor);border-radius:8px;padding:8px 12px;text-align:center}
+ol,ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+svg{max-width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.92rem}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+td:last-child,th:last-child{text-align:right}
+#qr{align-self:center;background:#fff;padding:10px;border-radius:8px;border:1px solid var(--line)}
+#qr img{display:block;width:260px;height:260px;max-width:100%;image-rendering:pixelated}
+a{color:var(--steel)}
+.art{border-radius:8px;overflow:hidden;background:linear-gradient(#e3ebf0,#cddae3);border:1px solid var(--line)}
+.art svg{width:100%}
+.art text{font:600 12px var(--body);fill:var(--ink)}
+.hero{background:var(--steel);border-color:var(--steel);color:#fff}
+.hero .eyebrow{color:var(--mark)}
+.hero .art{border-color:#14202b}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;font-size:.85rem}
+.steps div{background:var(--floor);border-radius:8px;padding:10px 6px}
+.steps b{display:block;font-family:var(--display);font-size:1.6rem;color:var(--steel);line-height:1}
+footer{text-align:center;font-size:.82rem;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .25s linear}}
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+<main id="app"></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+/* ---------- Lecturer settings ---------- */
+// Prefilled Google Form link. Use NAME, SCORE and CODE where the three answers go. Leave empty to play without a board.
+var FORM_URL = "";
+// The link students open (shown as a QR code in the lecturer view).
+var GAME_URL = "https://golmanrahmanifar.github.io/EOQ-game/";
+var SECRET = "epaint-2000";
+var WORK_DAYS = 250;
+
+/* ---------- Rounds ---------- */
+var ROUNDS = [
+ {type:"mc", time:40, title:"Two cost drivers",
+  q:"You double the order quantity Q. Demand, ordering cost per order and holding cost per unit stay the same. What happens to the two annual costs?",
+  opts:["Holding cost doubles, ordering cost halves","Both costs double","Holding cost halves, ordering cost doubles","Holding cost doubles, ordering cost stays the same"], correct:0,
+  why:"Annual holding cost is (Q/2)·H, so it grows in proportion to Q. Annual ordering cost is (D/Q)·S, so twice the quantity means half the orders."},
+ {type:"num", time:150, title:"The coffee roaster", ask:"Q",
+  story:"You manage the warehouse of a coffee roaster. Green coffee arrives in bags. Choose how many bags to order each time.",
+  D:3600, S:50, H:4, unit:"bags",
+  data:[["Annual demand D","3,600 bags"],["Ordering cost S","€50 per order"],["Holding cost H","€4 per bag per year"]]},
+ {type:"mc", time:40, title:"Read the bill",
+  q:"A colleague orders 600 units each time. Last year this cost €900 in holding and €400 in ordering. No formula allowed. What do you change?",
+  opts:["Order larger quantities, less often","Order smaller quantities, more often","Nothing, 600 is already optimal","You cannot tell without knowing demand"], correct:1,
+  why:"At the optimum the two annual costs are equal. Here holding is far above ordering, so Q is too large. The optimum for this item is 400 units, where both costs are €600."},
+ {type:"num", time:150, title:"The spare-parts depot", ask:"Q",
+  story:"A depot stocks a hydraulic pump. Finance reports holding cost as a percentage of the unit's value. Choose the order quantity.",
+  D:12000, S:80, H:6, unit:"pumps",
+  data:[["Annual demand D","12,000 pumps"],["Ordering cost S","€80 per order"],["Unit value","€30"],["Holding cost","20% of unit value per year"]],
+  note:"H = 20% × €30 = €6 per pump per year."},
+ {type:"mc", time:40, title:"Demand takes off",
+  q:"Annual demand becomes four times larger. Ordering cost and holding cost per unit do not change. What happens to the economic order quantity?",
+  opts:["It stays the same","It grows by about 41%","It doubles","It becomes four times larger"], correct:2,
+  why:"Q* = √(2DS/H). Demand sits under the square root, so four times the demand gives √4 = 2 times the quantity. Inventory grows more slowly than sales."},
+ {type:"mc", time:45, title:"When EOQ breaks",
+  q:"Which product is the worst fit for the basic EOQ model?",
+  opts:["Printer paper: about 200 boxes sold every week of the year","Ice cream: most of the year's sales fall in three summer months","Bolts: the supplier always delivers 5 days after the order","Paint: each order arrives complete on one truck"], correct:1,
+  why:"Basic EOQ assumes demand is known and even throughout the year. Seasonal ice cream breaks that assumption. Fixed lead time and single delivery are exactly what the model expects."},
+ {type:"num", time:180, title:"Final round: the order cycle", ask:"days",
+  story:"A distributor of industrial gloves works 250 days a year. Management does not want a quantity. They want a rhythm: how many working days should pass between two orders?",
+  D:8000, S:120, H:3, unit:"boxes",
+  data:[["Annual demand D","8,000 boxes"],["Ordering cost S","€120 per order"],["Holding cost H","€3 per box per year"],["Working days","250 per year"]],
+  note:"Q* = 800 boxes, so 8,000 / 800 = 10 orders per year, one every 250 / 10 = 25 working days."}
+];
+var MAX_SCORE = ROUNDS.length * 1100;
+var TIERS = [[6300,"Warehouse Master"],[4900,"Inventory Planner"],[3500,"Stock Controller"],[0,"Trainee"]];
+
+
+/* ---------- Pictures (inline SVG) ---------- */
+function bx(x,y,w,h){ return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#d9a05b" stroke="#8f5f26" stroke-width="1.5"/><rect x="'+(x+w/2-2)+'" y="'+y+'" width="4" height="'+h+'" fill="#b77a34"/>'; }
+function truck(x,y){ return '<rect x="'+x+'" y="'+y+'" width="56" height="32" rx="2" fill="#24506d"/><path d="M'+(x+56)+' '+(y+10)+'h14l8 10v12h-22z" fill="#f5b700" stroke="#14202b" stroke-width="1.5"/><rect x="'+(x+61)+'" y="'+(y+14)+'" width="9" height="7" fill="#dff0fa"/><circle cx="'+(x+14)+'" cy="'+(y+34)+'" r="7" fill="#14202b"/><circle cx="'+(x+62)+'" cy="'+(y+34)+'" r="7" fill="#14202b"/><circle cx="'+(x+14)+'" cy="'+(y+34)+'" r="2.5" fill="#8a97a3"/><circle cx="'+(x+62)+'" cy="'+(y+34)+'" r="2.5" fill="#8a97a3"/>'; }
+function arrow(x,y,up,c){ return '<path d="M'+x+' '+(up?y+26:y)+'v'+(up?-18:18)+'" stroke="'+c+'" stroke-width="5" fill="none"/><path d="M'+(x-9)+' '+(up?y+10:y+16)+'l9 '+(up?-11:11)+'l9 '+(up?11:-11)+'z" fill="'+c+'"/>'; }
+function scene(inner){ return '<div class="art"><svg viewBox="0 0 320 110" aria-hidden="true"><rect y="96" width="320" height="14" fill="#b9c6cf"/>'+inner+'</svg></div>'; }
+function sack(x){ return '<rect x="'+x+'" y="38" width="46" height="58" rx="13" fill="#b98a5a" stroke="#7a5630" stroke-width="1.5"/><path d="M'+(x+10)+' 44h26" stroke="#7a5630" stroke-width="2"/><ellipse cx="'+(x+23)+'" cy="70" rx="8" ry="11" fill="#4a2f1a"/><path d="M'+(x+23)+' 60q5 10 0 20" stroke="#b98a5a" stroke-width="1.5" fill="none"/>'; }
+var HERO = '<div class="art"><svg viewBox="0 0 320 150" aria-hidden="true"><rect width="320" height="150" fill="#1b3d54"/><rect y="120" width="320" height="30" fill="#14202b"/><path d="M0 135h320" stroke="#f5b700" stroke-width="4" stroke-dasharray="22 14"/>'+
+ '<g fill="#e8862e"><rect x="18" y="22" width="5" height="98"/><rect x="94" y="22" width="5" height="98"/><rect x="170" y="22" width="5" height="98"/><rect x="18" y="55" width="157" height="4"/><rect x="18" y="88" width="157" height="4"/></g>'+
+ bx(28,33,26,22)+bx(60,37,22,18)+bx(104,31,28,24)+bx(138,35,24,20)+bx(26,66,30,22)+bx(62,70,24,18)+bx(102,64,22,24)+bx(130,68,34,20)+bx(26,98,28,22)+bx(60,100,28,20)+bx(102,96,30,24)+bx(138,102,26,18)+
+ '<rect x="214" y="48" width="5" height="70" fill="#0c151c"/><rect x="190" y="110" width="28" height="4" fill="#0c151c"/>'+bx(192,88,24,22)+
+ '<path d="M236 88V60h28l9 28" fill="none" stroke="#0c151c" stroke-width="4"/><rect x="222" y="88" width="56" height="24" rx="4" fill="#f5b700"/><rect x="266" y="94" width="12" height="18" rx="2" fill="#d99a00"/>'+
+ '<circle cx="236" cy="116" r="9" fill="#0c151c"/><circle cx="268" cy="116" r="9" fill="#0c151c"/><circle cx="236" cy="116" r="3" fill="#8a97a3"/><circle cx="268" cy="116" r="3" fill="#8a97a3"/></svg></div>';
+var ART = [
+ scene(bx(40,74,22,22)+bx(62,74,22,22)+bx(84,74,22,22)+bx(51,52,22,22)+bx(73,52,22,22)+bx(62,30,22,22)+arrow(128,34,true,"#c23b2a")+'<text x="112" y="80">Holding</text>'+truck(196,58)+arrow(294,40,false,"#1c7f55")+'<text x="196" y="46">Ordering</text>'),
+ scene(sack(70)+sack(122)+sack(174)+'<ellipse cx="238" cy="92" rx="5" ry="7" fill="#4a2f1a"/><ellipse cx="252" cy="94" rx="5" ry="7" fill="#4a2f1a" transform="rotate(40 252 94)"/>'),
+ scene('<rect x="86" y="24" width="56" height="72" fill="#24506d"/><rect x="178" y="64" width="56" height="32" fill="#8a97a3"/><text x="114" y="18" text-anchor="middle">Holding €900</text><text x="206" y="58" text-anchor="middle">Ordering €400</text>'),
+ scene('<rect x="40" y="62" width="240" height="14" fill="#8a97a3"/><circle cx="160" cy="62" r="26" fill="none" stroke="#24506d" stroke-width="12" stroke-dasharray="10 6.3"/><circle cx="160" cy="62" r="20" fill="#24506d"/><circle cx="160" cy="62" r="7" fill="#f5b700"/><rect x="226" y="20" width="54" height="24" rx="4" fill="#f5b700" stroke="#14202b" stroke-width="1.5"/><text x="253" y="37" text-anchor="middle">20% / yr</text>'),
+ scene('<rect x="70" y="78" width="30" height="18" fill="#8a97a3"/><rect x="118" y="62" width="30" height="34" fill="#8a97a3"/><rect x="166" y="44" width="30" height="52" fill="#24506d"/><rect x="214" y="24" width="30" height="72" fill="#f5b700" stroke="#14202b" stroke-width="1.5"/><text x="229" y="18" text-anchor="middle">× 4</text><path d="M72 66L200 22" stroke="#1c7f55" stroke-width="3" fill="none" stroke-dasharray="6 4"/>'),
+ scene('<circle cx="232" cy="38" r="16" fill="#f5b700"/><path d="M232 10v8M232 58v8M204 38h8M252 38h8M212 18l6 6M246 52l6 6M252 18l-6 6M218 52l-6 6" stroke="#f5b700" stroke-width="3"/><path d="M112 58h44l-22 44z" fill="#d9a05b" stroke="#8f5f26" stroke-width="1.5"/><circle cx="122" cy="50" r="13" fill="#f3a6b5"/><circle cx="146" cy="50" r="13" fill="#fff4d6"/><circle cx="134" cy="34" r="13" fill="#9ed3c0"/>'),
+ scene('<rect x="46" y="26" width="84" height="66" rx="5" fill="#fff" stroke="#14202b" stroke-width="1.5"/><rect x="46" y="26" width="84" height="16" rx="5" fill="#c23b2a"/><g fill="#8a97a3"><circle cx="62" cy="54" r="4"/><circle cx="80" cy="54" r="4"/><circle cx="98" cy="54" r="4"/><circle cx="116" cy="54" r="4"/><circle cx="62" cy="70" r="4"/><circle cx="80" cy="70" r="4"/><circle cx="116" cy="70" r="4"/><circle cx="62" cy="84" r="3"/></g><circle cx="98" cy="70" r="7" fill="#f5b700" stroke="#14202b" stroke-width="1.5"/>'+truck(186,58)+'<path d="M146 76h28" stroke="#14202b" stroke-width="2" stroke-dasharray="5 4"/>')
+];
+var TROPHY = scene('<path d="M132 22h56v22a28 28 0 0 1-56 0z" fill="#f5b700" stroke="#14202b" stroke-width="2"/><path d="M132 28h-16a14 14 0 0 0 18 20M188 28h16a14 14 0 0 1-18 20" fill="none" stroke="#14202b" stroke-width="3"/><rect x="154" y="70" width="12" height="14" fill="#d99a00"/><rect x="138" y="84" width="44" height="12" rx="2" fill="#14202b"/>'+bx(60,74,22,22)+bx(238,74,22,22)+bx(250,52,22,22));
+
+/* ---------- Model ---------- */
+function tc(Q,r){ return Q/2*r.H + r.D/Q*r.S; }
+function qStar(r){ return Math.sqrt(2*r.D*r.S/r.H); }
+function numPoints(r,ans){
+  if(!(ans>0)) return {pts:0,Q:null};
+  var Q = r.ask==="days" ? r.D*ans/WORK_DAYS : ans;
+  var ratio = tc(Q,r)/tc(qStar(r),r);
+  return {pts:Math.max(0,Math.round(1000-4000*(ratio-1))), Q:Q, ratio:ratio};
+}
+function makeCode(name,score,att){
+  var s = SECRET+"|"+name.trim().toLowerCase()+"|"+score+"|"+att, h = 2166136261;
+  for(var i=0;i<s.length;i++){ h = Math.imul(h ^ s.charCodeAt(i), 16777619); }
+  return ("0000"+(h>>>0).toString(36).toUpperCase()).slice(-4)+"-A"+att;
+}
+function fmt(n,d){ return Number(n).toLocaleString("en-US",{maximumFractionDigits:d||0}); }
+function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v);}catch(e){ return null; } }
+
+/* ---------- State ---------- */
+var S = {name:"", idx:0, score:0, log:[], attempt:1, left:0, timer:null, locked:false};
+var app = document.getElementById("app");
+function el(html){ app.innerHTML = html; window.scrollTo(0,0); }
+function esc(t){ return String(t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+
+/* ---------- Screens ---------- */
+function intro(){
+  clearInterval(S.timer);
+  el('<div class="card hero">'+HERO+'<span class="eyebrow">Warehouse Management</span><h1>EOQ Warehouse Challenge</h1>'+
+   '<p>You are the inventory manager for one shift. Seven decisions, each scored out of 1,000. The cheapest warehouse wins.</p></div>'+
+   '<div class="steps"><div><b>7</b>decisions</div><div><b>10</b>minutes</div><div><b>7,700</b>points to win</div></div>'+
+   '<div class="card"><span class="eyebrow">How scoring works</span><ul>'+
+   '<li><b>Order decisions</b> are scored on cost. Your points fall as your annual cost rises above the minimum, so a near miss still pays.</li>'+
+   '<li><b>Judgement questions</b> are worth 1,000 or nothing.</li>'+
+   '<li><b>Speed bonus</b>: up to 100 extra points per round for a fast, scoring answer.</li>'+
+   '<li>Keep a calculator ready. Every round has a clock.</li></ul></div>'+
+   '<form class="card" id="f"><div class="field"><label for="nm">Your name, as it should appear on the board</label>'+
+   '<input type="text" id="nm" maxlength="24" autocomplete="off" required></div><button type="submit">Start the shift</button></form>'+
+   '<footer><a href="#host">Lecturer view</a></footer>');
+  document.getElementById("f").addEventListener("submit",function(e){
+    e.preventDefault();
+    var n = document.getElementById("nm").value.trim(); if(!n) return;
+    var a = parseInt(store("eoq_attempts")||"0",10)+1; store("eoq_attempts",String(a));
+    S = {name:n, idx:0, score:0, log:[], attempt:a, left:0, timer:null, locked:false};
+    round();
+  });
+}
+
+function hud(r){
+  return '<div class="hud"><span class="eyebrow">Round '+(S.idx+1)+' of '+ROUNDS.length+'</span><span>Score <b>'+fmt(S.score)+'</b></span></div>'+
+         '<div class="hud"><div class="bar" style="flex:1"><i id="tb"></i></div><b id="tt">'+r.time+'</b></div>';
+}
+function round(){
+  var r = ROUNDS[S.idx]; S.locked=false; S.left=r.time;
+  var body = '<div class="card">'+hud(r)+ART[S.idx]+'<h2>'+esc(r.title)+'</h2>';
+  if(r.type==="mc"){
+    body += '<p>'+esc(r.q)+'</p><div class="opts">'+r.opts.map(function(o,i){return '<button class="opt" data-i="'+i+'">'+esc(o)+'</button>';}).join("")+'</div>';
+  } else {
+    body += '<p>'+esc(r.story)+'</p><div class="data">'+r.data.map(function(d){return '<div><span>'+esc(d[0])+'</span><strong>'+esc(d[1])+'</strong></div>';}).join("")+'</div>'+
+     '<form id="nf" class="field"><label for="ans">'+(r.ask==="days"?"Working days between orders":"Order quantity Q ("+r.unit+")")+'</label>'+
+     '<input type="number" id="ans" inputmode="decimal" step="any" min="0" required><button type="submit">Place the order</button></form>';
+  }
+  el(body+'</div>');
+  if(r.type==="mc"){
+    Array.prototype.forEach.call(app.querySelectorAll(".opt"),function(b){ b.addEventListener("click",function(){ answer(parseInt(b.getAttribute("data-i"),10)); }); });
+  } else {
+    document.getElementById("nf").addEventListener("submit",function(e){ e.preventDefault(); answer(parseFloat(document.getElementById("ans").value)); });
+  }
+  clearInterval(S.timer);
+  var end = Date.now()+r.time*1000;
+  S.timer = setInterval(function(){
+    S.left = Math.max(0,(end-Date.now())/1000);
+    var tb=document.getElementById("tb"), tt=document.getElementById("tt");
+    if(tb){ tb.style.width=(S.left/r.time*100)+"%"; tb.className = S.left<10?"low":""; tt.textContent=Math.ceil(S.left); }
+    if(S.left<=0) answer(null);
+  },250);
+}
+
+function answer(a){
+  if(S.locked) return; S.locked=true; clearInterval(S.timer);
+  var r = ROUNDS[S.idx], pts=0, res=null;
+  if(r.type==="mc"){ pts = a===r.correct?1000:0; } else { res = numPoints(r,a); pts = res.pts; }
+  var bonus = pts>0 ? Math.round(100*S.left/r.time) : 0;
+  S.score += pts+bonus; S.log.push({title:r.title, pts:pts+bonus});
+  feedback(r,a,pts,bonus,res);
+}
+
+function curve(r,Qyou){
+  var qs=qStar(r), lo=qs*0.25, hi=Math.max(qs*2.4, Qyou?Math.min(Qyou*1.15,qs*5):0), W=320,Ht=180,p=8;
+  var top=tc(lo,r);
+  function x(q){return p+(q-lo)/(hi-lo)*(W-2*p);} function y(c){return Ht-p-Math.min(c,top)/top*(Ht-2*p);}
+  function path(f){var d="";for(var i=0;i<=60;i++){var q=lo+(hi-lo)*i/60;d+=(i?"L":"M")+x(q).toFixed(1)+" "+y(f(q)).toFixed(1);}return d;}
+  var s='<svg viewBox="0 0 '+W+' '+Ht+'" role="img" aria-label="Annual cost against order quantity">'+
+   '<line x1="'+p+'" y1="'+(Ht-p)+'" x2="'+(W-p)+'" y2="'+(Ht-p)+'" stroke="#cfd6db"/>'+
+   '<path d="'+path(function(q){return q/2*r.H;})+'" fill="none" stroke="#24506d" stroke-width="1.5" stroke-dasharray="4 3"/>'+
+   '<path d="'+path(function(q){return r.D/q*r.S;})+'" fill="none" stroke="#8a97a3" stroke-width="1.5" stroke-dasharray="4 3"/>'+
+   '<path d="'+path(function(q){return tc(q,r);})+'" fill="none" stroke="#14202b" stroke-width="2.5"/>'+
+   '<line x1="'+x(qs)+'" y1="'+p+'" x2="'+x(qs)+'" y2="'+(Ht-p)+'" stroke="#1c7f55" stroke-width="1.5"/>'+
+   '<circle cx="'+x(qs)+'" cy="'+y(tc(qs,r))+'" r="5" fill="#1c7f55"/>';
+  if(Qyou && Qyou>=lo && Qyou<=hi){ s+='<circle cx="'+x(Qyou)+'" cy="'+y(tc(Qyou,r))+'" r="6" fill="#f5b700" stroke="#14202b" stroke-width="2"/>'; }
+  return s+'</svg><div class="legend"><span><i style="background:#14202b"></i>Total cost</span><span><i style="background:#24506d"></i>Holding</span><span><i style="background:#8a97a3"></i>Ordering</span><span><i style="background:#1c7f55"></i>Optimum</span><span><i style="background:#f5b700"></i>Your choice</span></div>';
+}
+
+function feedback(r,a,pts,bonus,res){
+  var last = S.idx===ROUNDS.length-1, h='<div class="card">';
+  if(r.type==="mc"){
+    h+='<div class="verdict '+(pts?"good":"bad")+'">'+(a===null?"Time is up":pts?"Correct":"Not this time")+'</div>'+
+       '<div class="opts">'+r.opts.map(function(o,i){return '<div class="btn opt '+(i===r.correct?"right":i===a?"wrong":"")+'">'+esc(o)+'</div>';}).join("")+'</div><p>'+esc(r.why)+'</p>';
+  } else {
+    var qs=qStar(r), best=tc(qs,r);
+    h+='<div class="verdict '+(pts>=800?"good":pts>0?"":"bad")+'">'+(res.Q===null?"No order placed":pts>=980?"On the optimum":pts>=800?"Close to optimal":pts>0?"Costly choice":"Far too expensive")+'</div>';
+    h+='<div class="data"><div><span>Optimal quantity Q*</span><strong>'+fmt(qs,1)+' '+r.unit+'</strong></div><div><span>Minimum annual cost</span><strong>€'+fmt(best)+'</strong></div>';
+    if(res.Q!==null){ h+='<div><span>Your quantity</span><strong>'+fmt(res.Q,1)+' '+r.unit+'</strong></div><div><span>Your annual cost</span><strong>€'+fmt(tc(res.Q,r))+' (+'+fmt((res.ratio-1)*100,1)+'%)</strong></div>'; }
+    h+='</div>'+curve(r,res.Q);
+    if(r.note) h+='<p class="muted">'+esc(r.note)+'</p>';
+    if(res.Q!==null && pts>=800 && pts<980) h+='<p class="muted">The total cost curve is flat near its minimum, so a small miss in Q costs very little.</p>';
+  }
+  h+='<div class="hud"><span>This round</span><b>+'+fmt(pts)+(bonus?' <span class="muted">+'+bonus+' speed</span>':'')+'</b></div>'+
+     '<button id="nx">'+(last?"See my result":"Next round")+'</button></div>';
+  el(h);
+  document.getElementById("nx").addEventListener("click",function(){ S.idx++; if(S.idx<ROUNDS.length) round(); else final(); });
+}
+
+function final(){
+  var tier = TIERS.filter(function(t){return S.score>=t[0];})[0][1], code = makeCode(S.name,S.score,S.attempt);
+  var h='<div class="card">'+TROPHY+'<span class="eyebrow">Shift complete</span><h2>'+esc(S.name)+'</h2><div class="big">'+fmt(S.score)+'</div>'+
+    '<p class="muted">out of '+fmt(MAX_SCORE)+' points</p><div class="verdict good">'+tier+'</div>'+
+    '<div class="field"><span class="muted">Your result code</span><div class="code">'+code+'</div></div>';
+  if(FORM_URL){
+    var u = FORM_URL.replace("NAME",encodeURIComponent(S.name)).replace("SCORE",encodeURIComponent(S.score)).replace("CODE",encodeURIComponent(code));
+    h+='<a class="btn" href="'+esc(u)+'" target="_blank" rel="noopener">Send my score to the board</a><p class="muted">A form opens with your result filled in. Press Submit there to appear on the board.</p>';
+  } else {
+    h+='<p class="muted">Keep this screen open and show it to your lecturer.</p>';
+  }
+  h+='</div><div class="card"><span class="eyebrow">Your seven decisions</span><table><tbody>'+
+     S.log.map(function(l,i){return '<tr><td>'+(i+1)+'. '+esc(l.title)+'</td><td>'+fmt(l.pts)+'</td></tr>';}).join("")+'</tbody></table></div>';
+  el(h);
+}
+
+function host(){
+  clearInterval(S.timer);
+  var h='<div class="card"><span class="eyebrow">Lecturer view</span>'+HERO+'<h1>EOQ Warehouse Challenge</h1><p>Scan the code, enter your name and run the warehouse. Seven decisions, about ten minutes.</p>';
+  if(GAME_URL){ h+='<div id="qr"></div><p class="muted" style="text-align:center;word-break:break-all">'+esc(GAME_URL)+'</p>'; }
+  else { h+='<p class="muted">No game link is set yet, so there is no QR code to show.</p>'; }
+  h+='</div><div class="card"><span class="eyebrow">Check a result code</span><p class="muted">Enter what a student submitted. A genuine code matches the name and score, and its ending shows which attempt it was (A1 is the first).</p>'+
+     '<form id="vf" class="field"><label for="vn">Name</label><input type="text" id="vn" autocomplete="off" required><label for="vs">Score</label><input type="number" id="vs" required><label for="vc">Code</label><input type="text" id="vc" autocomplete="off" required><button type="submit">Check</button></form><div id="vr"></div></div>'+
+     '<footer><a href="#">Open the game</a></footer>';
+  el(h);
+  var box=document.getElementById("qr");
+  if(box && window.qrcode){ try{ var q=qrcode(0,"M"); q.addData(GAME_URL); q.make(); box.innerHTML=q.createImgTag(8,0); }catch(e){ box.remove(); } } else if(box){ box.remove(); }
+  document.getElementById("vf").addEventListener("submit",function(e){
+    e.preventDefault();
+    var c=document.getElementById("vc").value.trim().toUpperCase(), m=c.match(/-A(\d+)$/), ok=false;
+    if(m){ ok = makeCode(document.getElementById("vn").value, parseInt(document.getElementById("vs").value,10), parseInt(m[1],10))===c; }
+    document.getElementById("vr").innerHTML='<div class="verdict '+(ok?"good":"bad")+'">'+(ok?"Genuine, attempt "+m[1]:"Does not match")+'</div>';
+  });
+}
+
+function route(){ if(location.hash==="#host") host(); else if(!S.name || S.idx>=ROUNDS.length) intro(); }
+window.addEventListener("hashchange",function(){ if(location.hash==="#host") host(); else intro(); });
+route();
+</script>
+</body>
+</html>
