@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OR in Transportation Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:wght@600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one phone-width column of white cards on the lecture's blue-grey paper; teal eyebrows and serif titles as on the slides. */
+:root{
+  color-scheme: light;
+  --paper:#eef3f6; --card:#ffffff; --ink:#0f2540; --teal:#0b6e78; --muted:#526579; --line:#d3dde4; --orange:#e0861a;
+  --good:#1c7f55; --bad:#c0392b; --goodbg:#e4f3ec; --badbg:#fbe9e7; --soft:#f6f9fb;
+  --display:"Spectral",Georgia,"Times New Roman",serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 var(--body)}
+main{max-width:560px;margin:0 auto;padding:16px 16px 40px;display:flex;flex-direction:column;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.hero{background:var(--ink);border-color:var(--ink);color:#fff}
+.eyebrow{font:600 .76rem var(--body);letter-spacing:.09em;text-transform:uppercase;color:var(--teal)}
+.hero .eyebrow{color:#7fd3da}
+h1,h2{font-family:var(--display);font-weight:600;margin:0;line-height:1.15;text-wrap:balance}
+h1{font-size:2rem} h2{font-size:1.4rem}
+p{margin:0}
+.muted{color:var(--muted);font-size:.92rem}
+.hero .muted{color:#c9d6e2}
+.art{border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--soft)}
+.hero .art{border-color:#244569}
+.art svg{display:block;width:100%;height:auto}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;font-size:.8rem;color:var(--muted)}
+.stats div{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 4px}
+.stats b{display:block;font:600 1.45rem var(--display);color:var(--teal)}
+ul,ol{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+button,.btn{font:600 1rem var(--body);border-radius:8px;border:0;background:var(--teal);color:#fff;padding:13px 16px;cursor:pointer;text-align:center;text-decoration:none;display:block;width:100%}
+.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+button[disabled]{opacity:.45;cursor:default}
+button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+.hud{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-variant-numeric:tabular-nums}
+.hud b{font:600 1.2rem var(--display)}
+.timer{display:flex;align-items:center;gap:10px;font-variant-numeric:tabular-nums}
+.bar{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--teal)}
+.bar i.low{background:var(--bad)}
+.stmt{font:500 1.1rem/1.45 var(--body);background:var(--soft);border-left:4px solid var(--teal);border-radius:6px;padding:14px}
+.bins{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bins.three{grid-template-columns:1fr 1fr 1fr}
+.bin,.opt{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+.bin{padding:14px 6px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;font-weight:500}
+.right{border-color:var(--good)!important;background:var(--goodbg)!important}
+.wrong{border-color:var(--bad)!important;background:var(--badbg)!important}
+.verdict{font:600 1.45rem var(--display)}
+.verdict.good{color:var(--good)} .verdict.bad{color:var(--bad)}
+.why{background:var(--soft);border-radius:8px;padding:12px;font-size:.95rem;display:flex;flex-direction:column;gap:6px}
+.data{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.data div{background:var(--soft);border-radius:8px;padding:8px 10px}
+.data span{display:block;font-size:.76rem;color:var(--muted)}
+.data strong{font-variant-numeric:tabular-nums}
+input[type=text],input[type=number],select{font:500 1.1rem var(--body);width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+label{font-weight:600;font-size:.92rem}
+.field{display:flex;flex-direction:column;gap:6px}
+.lanes{display:flex;flex-direction:column;gap:6px}
+.lane{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:8px;padding:6px 8px;background:var(--soft);border-radius:8px}
+.lane small{display:block;color:var(--muted)}
+.step{width:42px;height:42px;padding:0;font-size:1.3rem;background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+.qty{min-width:34px;text-align:center;font:600 1.15rem var(--display);font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:.8rem;padding:5px 9px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-variant-numeric:tabular-nums}
+.chip.ok{border-color:var(--good);background:var(--goodbg)}
+.chip.low{border-color:var(--orange);background:#fdf1e1}
+.chip.over{border-color:var(--bad);background:var(--badbg)}
+.big{font:600 3.2rem/1 var(--display);font-variant-numeric:tabular-nums}
+.code{font:500 1.35rem var(--mono);letter-spacing:.1em;background:var(--soft);border-radius:8px;padding:8px 12px;text-align:center}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.92rem}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+td:last-child,th:last-child{text-align:right}
+.games{display:flex;flex-direction:column;gap:10px}
+.game{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:center;text-decoration:none;color:inherit}
+.qrs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;text-align:center}
+.qrs img{width:100%;max-width:210px;height:auto;image-rendering:pixelated;background:#fff}
+.tap{touch-action:manipulation;cursor:crosshair}
+a{color:var(--teal)}
+footer{display:flex;justify-content:center;gap:18px;font-size:.85rem;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .2s linear}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+/* ---------- Settings ---------- */
+var BASE = "https://golmanrahmanifar.github.io/EOQ-game/or.html";
+var FORM = {base:"https://docs.google.com/forms/d/e/1FAIpQLSdQise8x--mjLn2VbLvLSvY20Flt3zTopAziDeFMiDMgYu8iw/viewform?usp=pp_url",
+  name:"entry.750876438", game:"entry.198207169", score:"entry.1016670232", code:"entry.881142197"};
+var SECRET = "ort-sapienza-2026";
+var PTS = {sort:[100,25], mc:[200,50], num:[300,50], plan:[1000,0], tap:[600,0]};
+var C = {ink:"#0f2540", teal:"#0b6e78", tealL:"#7fd3da", muted:"#526579", line:"#d3dde4", orange:"#e0861a", good:"#1c7f55", bad:"#c0392b", soft:"#f6f9fb", night:"#16304f"};
+
+/* ---------- Pictures (inline SVG) ---------- */
+function svg(w,h,inner){ return '<svg viewBox="0 0 '+w+' '+h+'" aria-hidden="true">'+inner+'</svg>'; }
+function txt(x,y,t,o){ o=o||{}; return '<text x="'+x+'" y="'+y+'" font-size="'+(o.s||12)+'" font-weight="'+(o.w||500)+'" text-anchor="'+(o.a||'middle')+'" fill="'+(o.c||C.ink)+'" font-family="IBM Plex Sans,system-ui,sans-serif">'+t+'</text>'; }
+function truck(x,y,sc,dark){ return '<g transform="translate('+x+' '+y+') scale('+(sc||1)+')"><rect width="44" height="22" rx="2" fill="'+C.teal+'"/><path d="M44 6h10l7 8v8H44z" fill="'+C.orange+'"/><rect x="48" y="9" width="7" height="5" fill="#e8f4f6"/><circle cx="11" cy="24" r="5" fill="'+C.ink+'" stroke="'+(dark?'#fff':C.ink)+'" stroke-width="1.5"/><circle cx="51" cy="24" r="5" fill="'+C.ink+'" stroke="'+(dark?'#fff':C.ink)+'" stroke-width="1.5"/></g>'; }
+function house(x,y,col,win){ return '<path d="M'+(x-20)+' '+(y+14)+'v-17l20-13 20 13v17z" fill="'+col+'"/><rect x="'+(x-7)+'" y="'+(y+1)+'" width="14" height="13" fill="'+win+'"/>'; }
+function star(cx,cy,r,col){ var p=[]; for(var i=0;i<10;i++){ var a=-Math.PI/2+i*Math.PI/5, rr=i%2?r*0.45:r; p.push((cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1)); } return '<polygon points="'+p.join(' ')+'" fill="'+col+'" stroke="#fff" stroke-width="1.2"/>'; }
+function netArt(dark){
+  var bg=dark?C.night:C.soft, ln=dark?'#4f6f8f':'#b7c7d3', D=[200,92], P=[[200,26],[300,52],[318,124],[222,164],[104,150],[86,62]];
+  var RC=dark?[C.tealL,C.orange,'#ffffff']:[C.teal,C.orange,C.ink], s='<rect width="400" height="190" fill="'+bg+'"/>';
+  P.forEach(function(p){ s+='<line x1="'+D[0]+'" y1="'+D[1]+'" x2="'+p[0]+'" y2="'+p[1]+'" stroke="'+ln+'" stroke-dasharray="3 4"/>'; });
+  [[0,1],[2,3],[4,5]].forEach(function(r,k){ s+='<path d="M'+D+' L'+P[r[0]]+' L'+P[r[1]]+' Z" fill="none" stroke="'+RC[k]+'" stroke-width="2.5" stroke-linejoin="round"/>'; });
+  P.forEach(function(p,i){ s+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="11" fill="'+(i===3?C.orange:C.teal)+'" stroke="'+bg+'" stroke-width="2.5"/>'; });
+  s+='<rect x="180" y="72" width="40" height="40" rx="7" fill="#fff" stroke="'+C.ink+'" stroke-width="2"/>'+house(200,90,C.ink,'#fff');
+  s+='<text x="250" y="33" font-size="14" font-style="italic" fill="'+(dark?'#cfe3ee':C.muted)+'">x<tspan font-size="10" dy="4">ij</tspan></text>';
+  return svg(400,190,s+truck(22,152,0.85,dark));
+}
+function bipArt(dark){
+  var bg=dark?C.night:C.soft, ln=dark?C.tealL:C.teal, tc=dark?'#fff':C.ink, Dp=[[74,58],[74,138]], Cu=[[322,36],[322,98],[322,160]];
+  var s='<rect width="400" height="190" fill="'+bg+'"/>';
+  Dp.forEach(function(d){ Cu.forEach(function(c){ s+='<line x1="'+(d[0]+24)+'" y1="'+d[1]+'" x2="'+(c[0]-16)+'" y2="'+c[1]+'" stroke="'+ln+'" stroke-width="2" stroke-opacity=".65"/>'; }); });
+  Dp.forEach(function(d,i){ s+=house(d[0],d[1],dark?'#fff':C.ink,dark?C.night:'#fff')+txt(d[0],d[1]+32,['North','South'][i],{c:tc,s:12,w:600}); });
+  Cu.forEach(function(c,i){ s+='<circle cx="'+c[0]+'" cy="'+c[1]+'" r="15" fill="'+(i===1?C.orange:C.teal)+'"/>'+txt(c[0],c[1]+5,'ABC'[i],{c:'#fff',s:14,w:600}); });
+  return svg(400,190,s);
+}
+function cornerArt(dark){
+  var bg=dark?C.night:C.soft, ax=dark?'#cfe3ee':C.ink, fill=dark?C.tealL:C.teal;
+  var s='<rect width="400" height="190" fill="'+bg+'"/><path d="M60 168V18M60 168H362" stroke="'+ax+'" stroke-width="1.5" fill="none"/>';
+  s+='<polygon points="60,168 60,72 130,46 235,62 292,168" fill="'+fill+'" fill-opacity=".28" stroke="'+fill+'" stroke-width="2"/>';
+  s+='<path d="M170 23L340 125" stroke="'+C.orange+'" stroke-width="2.5" stroke-dasharray="7 5"/>'+star(235,62,11,C.orange);
+  return svg(400,190,s+txt(250,52,'Z*',{c:dark?'#fff':C.ink,s:13,a:'start',w:600})+truck(300,140,0.6,dark));
+}
+function processArt(){
+  var s='<rect width="400" height="90" fill="'+C.soft+'"/>';
+  ['Problem','Model','?','Solution'].forEach(function(l,i){ var x=12+i*98, q=l==='?';
+    s+='<rect x="'+x+'" y="25" width="80" height="40" rx="6" fill="'+(i===0?C.teal:'#fff')+'" stroke="'+(q?C.orange:C.ink)+'" stroke-width="'+(q?2.5:1.5)+'"'+(q?' stroke-dasharray="5 4"':'')+'/>'+txt(x+40,q?52:50,l,{s:q?18:13,w:600,c:i===0?'#fff':C.ink});
+    if(i<3) s+='<path d="M'+(x+82)+' 45h10" stroke="'+C.muted+'" stroke-width="2"/><path d="M'+(x+96)+' 45l-6-4v8z" fill="'+C.muted+'"/>'; });
+  return svg(400,90,s);
+}
+function shape(k){
+  var f='fill="'+C.teal+'" fill-opacity=".22" stroke="'+C.teal+'" stroke-width="2.5"', s='<rect width="200" height="110" fill="#fff"/>';
+  if(k==='rect') s+='<rect x="45" y="20" width="110" height="70" '+f+'/>';
+  if(k==='L') s+='<path d="M45 18h45v46h65v28H45z" '+f+'/>';
+  if(k==='lp') s+='<polygon points="40,95 40,42 92,18 160,34 172,95" '+f+'/>';
+  if(k==='tri') s+='<polygon points="100,14 168,96 32,96" '+f+'/>';
+  if(k==='two') s+='<ellipse cx="62" cy="55" rx="34" ry="30" '+f+'/><ellipse cx="146" cy="55" rx="30" ry="34" '+f+'/>';
+  if(k==='dots'){ for(var x=40;x<=160;x+=30) for(var y=24;y<=96;y+=24) if(y>=100-(x>100?200-x:x)*0.9) s+='<circle cx="'+x+'" cy="'+y+'" r="5.5" fill="'+C.teal+'"/>'; }
+  return svg(200,110,s);
+}
+function fLand(x){ function g(m,w){ return Math.exp(-Math.pow((x-m)/w,2)); } return 3-1.6*g(2,0.8)-2.8*g(6.2,0.9)-1.2*g(8.8,0.5)+0.03*(x-5)*(x-5); }
+function argExt(a,b,sign){ var bx=a, bv=sign*fLand(a); for(var x=a;x<=b;x+=0.01){ var v=sign*fLand(x); if(v<bv){bv=v;bx=x;} } return bx; }
+var LAND = (function(){ var A=argExt(0.5,3.5,1), B=argExt(A,5.5,-1), Cg=argExt(4.5,7.5,1), D=argExt(7.6,9.8,1); return {A:A,B:B,C:Cg,D:D,T:A+0.45*(B-A)}; })();
+function landArt(showTruck){
+  var W=400,H=180,L=20,T=26,w=360,h=120, lo=0.2, hi=3.8;
+  function X(x){ return L+x/10*w; } function Y(x){ return T+(hi-fLand(x))/(hi-lo)*h; }
+  var d=''; for(var x=0;x<=10.001;x+=0.05) d+=(x?'L':'M')+X(x).toFixed(1)+' '+Y(x).toFixed(1);
+  var s='<rect width="'+W+'" height="'+H+'" fill="'+C.soft+'"/><path d="'+d+'L'+X(10)+' '+H+'L'+X(0)+' '+H+'Z" fill="'+C.teal+'" fill-opacity=".12"/><path d="'+d+'" fill="none" stroke="'+C.ink+'" stroke-width="2.5"/>';
+  [['A',LAND.A,1],['B',LAND.B,-1],['C',LAND.C,1],['D',LAND.D,1]].forEach(function(p){ var x=X(p[1]), y=Y(p[1]); s+='<circle cx="'+x+'" cy="'+y+'" r="4.5" fill="'+C.ink+'"/><circle cx="'+x+'" cy="'+(y+(p[2]>0?20:-20))+'" r="10" fill="#fff" stroke="'+C.ink+'" stroke-width="1.5"/>'+txt(x,y+(p[2]>0?24.5:-15.5),p[0],{s:12,w:600}); });
+  if(showTruck){ var tx=X(LAND.T), ty=Y(LAND.T); s+=truck(tx-15,ty-24,0.5,false)+'<path d="M'+(tx-20)+' '+(ty-30)+'l-14 8" stroke="'+C.orange+'" stroke-width="2.5"/><path d="M'+(tx-36)+' '+(ty-21)+'l3-8 5 6z" fill="'+C.orange+'"/>'; }
+  return svg(W,H,s);
+}
+function parallelArt(){
+  var s='<rect width="400" height="170" fill="'+C.soft+'"/><path d="M50 150V14M50 150H370" stroke="'+C.ink+'" stroke-width="1.5" fill="none"/>';
+  s+='<polygon points="50,150 50,70 150,40 260,73 300,150" fill="'+C.teal+'" fill-opacity=".22" stroke="'+C.teal+'" stroke-width="2"/>';
+  s+='<path d="M110 28L330 94" stroke="'+C.orange+'" stroke-width="2.5" stroke-dasharray="7 5"/>'+txt(332,108,'objective line',{s:11,a:'end',c:C.orange,w:600});
+  s+='<circle cx="150" cy="40" r="6" fill="'+C.good+'"/><circle cx="260" cy="73" r="6" fill="'+C.good+'"/>';
+  return svg(400,170,s);
+}
+
+/* ---------- Game content ---------- */
+var LP_CFG = {xMax:10, yMax:8, snap:0.5, obj:[3,4], opt:[6,4],
+  story:'A freight company ships <i>x</i> hundred tonnes by rail and <i>y</i> hundred tonnes by road per day. Profit <b>Z = 3x + 4y</b> (thousand €). Tap the most profitable point. Three taps, your best one counts.',
+  cons:[{a:2,b:1,c:16,l:'2x + y ≤ 16',lx:8.15,ly:1.1,an:'start'},{a:1,b:2,c:14,l:'x + 2y ≤ 14',lx:7.4,ly:3.75,an:'start'},{a:0,b:1,c:6,l:'y ≤ 6',lx:0.2,ly:6.3,an:'start'}],
+  legend:'2x + y ≤ 16: loading-crew hours · x + 2y ≤ 14: terminal slots · y ≤ 6: road fleet',
+  why:'The optimum is the corner (6, 4), where crew hours and terminal slots are both used up: Z = 3·6 + 4·4 = 34. From that corner, moving along either edge lowers the profit. This is corner-point optimality.'};
+var IP_CFG = {xMax:5, yMax:5, snap:1, obj:[3,2], opt:[3,1], lpOpt:[2.75,1.75],
+  story:'Now <i>x</i> and <i>y</i> are whole trucks of type A and B. Profit <b>Z = 3x + 2y</b> (thousand €). Only the dots are allowed. Tap the best dot. Three taps, your best one counts.',
+  cons:[{a:2,b:2,c:9,l:'2x + 2y ≤ 9',lx:2.75,ly:2.4,an:'start'},{a:3,b:1,c:10,l:'3x + y ≤ 10',lx:3.55,ly:0.45,an:'start'}],
+  legend:'2x + 2y ≤ 9: drivers · 3x + y ≤ 10: parking bays',
+  why:'The LP corner (2.75, 1.75) gives Z = 11.75, but trucks must be whole. Rounding up to (3, 2) needs 10 drivers, one more than you have; rounding down to (2, 1) gives only Z = 8. The best dot is (3, 1) with Z = 11, and it is not a corner of the region.'};
+var PLAN = {dep:[{n:'North',s:35},{n:'South',s:25}], cus:[{n:'A',d:20},{n:'B',d:15},{n:'C',d:25}], c:[[3,5,4],[2,2,7]], opt:180, best:[[10,0,25],[10,15,0]], step:5,
+  why:'South has only 25 units, and both A and B want its cheap lanes. South saves €3 per unit on B (€2 instead of €5) but only €1 on A (€2 instead of €3), so it should serve all 15 of B first and then 10 of A. North covers the rest: 10 to A and 25 to C. Minimum cost €180. Filling the cheapest lane, South → A, first ends at €200.'};
+
+var GAMES = {
+ model:{n:1, title:'Build the Model', where:'After slide 14 · Model building', minutes:6,
+  blurb:'A courier in Rome plans tomorrow’s deliveries. Turn the story into an optimization model, piece by piece.',
+  art:function(d){ return netArt(d); },
+  parts:[
+   {name:'Warm-up', sum:'One question on the OR process.', items:[
+    {type:'mc', time:25, art:processArt(), q:'In the OR process, what comes between the model and the solution?',
+     opts:['Abstraction','The algorithm','Data collection','A sensitivity report'], a:1,
+     why:'Problem → model → algorithm → solution. Abstraction takes you from the real problem to the model; the algorithm turns the model into a solution.'}]},
+   {name:'Sort the model', sum:'12 cards: objective, decision variable, constraint or parameter?', time:12,
+    bins:['Objective','Decision variable','Constraint','Parameter'],
+    intro:'A courier in Rome serves its customers from one depot with three vans. Each card is one piece of the model. Tap where it belongs. Twelve cards, twelve seconds each.',
+    items:[
+     {t:'Minimize the total distance driven by all vans', a:0, why:'It says what we optimize: the objective function.'},
+     {t:'x<sub>ij</sub> = 1 if a van drives directly from location i to location j, otherwise 0', a:1, why:'The model chooses its value: a binary decision variable.'},
+     {t:'Each customer is visited exactly once', a:2, why:'It restricts which routes are allowed: a constraint.'},
+     {t:'Van capacity Q = 120 parcels', a:3, why:'A fixed number known in advance: a parameter (a resource parameter).'},
+     {t:'y<sub>k</sub> = 1 if van k is used tomorrow', a:1, why:'The model decides whether to use each van: a decision variable.'},
+     {t:'Customer 4 orders d<sub>4</sub> = 18 parcels', a:3, why:'Known input data: a demand parameter.'},
+     {t:'The parcels loaded on one route cannot exceed Q', a:2, why:'A limit on the decisions: a capacity constraint. Q itself is the parameter inside it.'},
+     {t:'Driving distance from the depot to customer 2: c<sub>02</sub> = 6.4 km', a:3, why:'A fixed coefficient of the objective: a cost parameter.'},
+     {t:'Every route starts and ends at the depot', a:2, why:'It restricts the routes: a constraint.'},
+     {t:'t<sub>i</sub> = the time the van arrives at customer i', a:1, why:'Arrival times follow from the routes the model chooses, so they are decision variables.'},
+     {t:'Fixed cost of using a van: €45 per day', a:3, why:'Known in advance and fixed while solving: a cost parameter.'},
+     {t:'A driver’s shift lasts at most 8 hours', a:2, why:'It limits the routes: a constraint. The 8 hours is the parameter inside it.'}]},
+   {name:'Parameter types', sum:'6 cards: cost, resource or demand?', time:10, bins:['Cost','Resource','Demand'],
+    intro:'In a vehicle routing model, parameters come in three kinds: cost, resource and demand. Six cards, ten seconds each.',
+    items:[
+     {t:'Fuel cost: €0.35 per km', a:0, why:'It prices every kilometre: a cost parameter in the objective.'},
+     {t:'Van capacity: 120 parcels', a:1, why:'It limits what the fleet can carry: a resource parameter.'},
+     {t:'Customer 7 orders 25 parcels', a:2, why:'What a customer needs: a demand parameter.'},
+     {t:'3 vans available at the depot', a:1, why:'Fleet size limits the solution: a resource parameter.'},
+     {t:'Toll on the ring road: €4 per pass', a:0, why:'It adds cost to routes on the ring road: a cost parameter.'},
+     {t:'A pharmacy orders 6 boxes of medicine', a:2, why:'A customer requirement: a demand parameter.'}]},
+   {name:'Translate to maths', sum:'Pick the right formula for two rules.', items:[
+    {type:'mc', time:40, q:'Translate into maths: <i>each customer j is visited exactly once</i>. Here x<sub>ij</sub> = 1 if a van drives from i to j.',
+     opts:['Σ<sub>i</sub> x<sub>ij</sub> = 1 for every customer j','Σ<sub>i</sub> Σ<sub>j</sub> x<sub>ij</sub> = 1','Σ<sub>i</sub> x<sub>ij</sub> ≤ 1 for every customer j','x<sub>ij</sub> = 1 for all i and j'], a:0,
+     why:'Exactly one arc must enter each customer, so the arcs into j add up to 1, for every j. With ≤ 1 a customer could be skipped; the double sum allows only one arc in the whole network; the last option uses every arc.'},
+    {type:'mc', time:40, q:'Translate into maths: <i>at most K vans leave the depot</i> (node 0).',
+     opts:['Σ<sub>j</sub> x<sub>0j</sub> = 1','Σ<sub>j</sub> x<sub>0j</sub> ≤ K','x<sub>0j</sub> ≤ K for every j','Σ<sub>i</sub> x<sub>i0</sub> ≥ K'], a:1,
+     why:'Each van that leaves uses one arc out of the depot, so the arcs leaving node 0 count the vans used. K is a resource parameter.'}]}
+  ]},
+ lp:{n:2, title:'Choose and Solve', where:'After slide 22 · Optimization techniques', minutes:8,
+  blurb:'Pick the right technique for each transport problem, then solve a small transportation problem by hand.',
+  art:function(d){ return bipArt(d); },
+  parts:[
+   {name:'Which technique?', sum:'8 transport problems: LP, IP, NLP or MIP?', time:18, bins:['LP','IP','NLP','MIP'],
+    intro:'Each card describes a transport decision. Tap the model type that fits: linear (LP), integer (IP), nonlinear (NLP) or mixed-integer (MIP). Eight cards, eighteen seconds each.',
+    items:[
+     {t:'Decide how many buses (whole buses) to assign to each of 6 city lines. The cost per bus is fixed.', a:1, why:'Every decision is a whole number and all relations are linear: IP.'},
+     {t:'Ship grain from 3 ports to 5 mills. The cost per tonne is fixed and any amount, such as 12.7 t, is allowed.', a:0, why:'Continuous amounts with linear costs and capacities: LP.'},
+     {t:'Travel time on each road rises sharply as traffic grows. Split 3,000 cars per hour over 3 roads to minimize total travel time.', a:2, why:'Congestion makes travel time a nonlinear function of the flow: NLP.'},
+     {t:'Decide which of 4 depots to open (yes or no) and how many tonnes each open depot ships to 20 stores.', a:3, why:'Yes/no opening decisions together with continuous tonnes: MIP.'},
+     {t:'Split 900 t of cement between rail and road. Costs per tonne are fixed and both modes have a known capacity.', a:0, why:'Continuous tonnes and linear relations: LP.'},
+     {t:'Choose which 8 of 30 candidate delivery routes to run tomorrow. Each route is either run or not.', a:1, why:'Every decision is binary (0 or 1): a pure integer program.'},
+     {t:'A ship’s fuel use grows with the square of its speed. Choose the speed on each leg to minimize fuel.', a:2, why:'Fuel grows with speed squared, which is nonlinear: NLP.'},
+     {t:'Choose how many trucks to lease (whole trucks) and how many tonnes each lane carries.', a:3, why:'Whole trucks (integer) and tonnes (continuous) in one model: MIP.'}]},
+   {name:'LP check', sum:'Two quick questions on LP models.', items:[
+    {type:'mc', time:30, q:'Which line can <b>not</b> appear in a linear program?',
+     opts:['3x<sub>1</sub> + 2x<sub>2</sub> ≤ 40','x<sub>1</sub> ≥ 0','x<sub>1</sub> · x<sub>2</sub> ≤ 10','min 4x<sub>1</sub> + 7x<sub>2</sub>'], a:2,
+     why:'A product of two decision variables is nonlinear. An LP only allows sums of variables multiplied by constant coefficients.'},
+    {type:'mc', time:30, q:'In the product-mix example, what does x<sub>3</sub> stand for?',
+     opts:['The profit of one unit of PROD 3 (£350)','The number of units of PROD 3 made per week','The drilling hours one unit of PROD 3 needs (16 h)','The drilling hours available per week'], a:1,
+     why:'x<sub>3</sub> is a decision variable: how many units of PROD 3 the factory makes in a week. £350 and 16 h are parameters.'}]},
+   {name:'Capacity', sum:'Compute one parameter from the product-mix slide.', items:[
+    {type:'num', time:90, q:'Product-mix factory: how many grinding hours are available per week?', unit:'hours', ans:288,
+     data:[['Grinding machines','3'],['Working days','6 per week'],['Shifts','2 per day'],['Shift length','8 hours']],
+     why:'3 × 6 × 2 × 8 = 288 hours. This parameter is the right-hand side of the grinding constraint 12x<sub>1</sub> + 20x<sub>2</sub> + 25x<sub>4</sub> + 15x<sub>5</sub> ≤ 288.'}]},
+   {name:'Transport planner', sum:'Ship from 2 depots to 3 customers at minimum cost.', art:bipArt(false),
+    intro:'Two depots supply three customers. Choose how many units to send on each lane, in steps of 5. Every customer must get exactly what it ordered and no depot can send more than it has. Lowest total cost wins. You have four minutes.',
+    items:[{type:'plan', time:240}]}
+  ]},
+ optima:{n:3, title:'Corner Hunter', where:'After slide 27 · Feasible regions and optima', minutes:6,
+  blurb:'Find optimal corners, whole-number solutions and the deepest valley.',
+  art:function(d){ return cornerArt(d); },
+  parts:[
+   {name:'Convex or not?', sum:'6 shapes, decide fast.', time:8, bins:['Convex','Not convex'], art:shape('lp'),
+    intro:'A region is convex if the straight line between any two of its points stays inside it. Six shapes, eight seconds each.',
+    items:[
+     {art:shape('rect'), a:0, why:'Any segment between two of its points stays inside.'},
+     {art:shape('L'), a:1, why:'A segment across the inner corner leaves the region.'},
+     {art:shape('lp'), a:0, why:'An LP feasible region is an intersection of half-planes, so it is always convex.'},
+     {art:shape('dots'), a:1, why:'Only the dots belong to the set. The segment between two dots passes through points that are not in it. This is why integer programs are harder.'},
+     {art:shape('tri'), a:0, why:'A triangle is convex.'},
+     {art:shape('two'), a:1, why:'Two separate pieces: the segment from one to the other leaves the region.'}]},
+   {name:'Corner hunter', sum:'Tap the most profitable point of an LP.', items:[{type:'tap', time:75, cfg:LP_CFG}]},
+   {name:'Whole trucks only', sum:'Find the best integer point.', items:[{type:'tap', time:75, cfg:IP_CFG}]},
+   {name:'Local or global?', sum:'Four questions on optima.', items:[
+    {type:'mc', time:30, art:landArt(false), q:'This curve is a cost to minimize. Which point is the global minimum?', opts:['A','B','C','D'], a:2,
+     why:'C is the lowest point of the whole curve. A and D are local minima: lowest only in their own neighbourhood. B is a local maximum.'},
+    {type:'mc', time:30, art:landArt(true), q:'A gradient method starts at the truck and always moves downhill. Where does it stop?', opts:['A','B','C','D'], a:0,
+     why:'Downhill from the truck leads into the valley at A. The slope is zero there, so the method stops at a local minimum and never sees C.'},
+    {type:'mc', time:30, q:'What gives the method a better chance of reaching C?',
+     opts:['Taking smaller steps','Restarting from several points, or a heuristic such as simulated annealing','Adding the constraint x ≥ 0','Using Lagrange multipliers'], a:1,
+     why:'Multiple starts and heuristics such as simulated annealing can escape local optima. Smaller steps still stop at A, and Lagrange multipliers handle constraints, not multiple valleys.'},
+    {type:'mc', time:35, art:parallelArt(), q:'In an LP, the objective line is parallel to the edge between two optimal corners. Which points are optimal?',
+     opts:['Only the left corner','Every point on that edge, including both corners','No point: the LP is unbounded','Only the midpoint of the edge'], a:1,
+     why:'Every point on that edge has the same objective value, so there are many optimal solutions. The corners are among them, which is why searching corners still finds an optimum.'}]}
+  ]}
+};
+var ORDER = ['model','lp','optima'];
+var TIERS = [[0.85,'Global optimum','Nothing left to improve.'],[0.65,'Local optimum','Good, but a better solution exists. Look again at what you missed.'],[0.4,'Feasible solution','You meet the constraints. Now push the objective.'],[0,'Infeasible','Some key ideas are missing. Revisit this section of the slides.']];
+
+/* ---------- Maths ---------- */
+function feas(cfg,x,y){ if(x<-1e-9||y<-1e-9) return false; for(var i=0;i<cfg.cons.length;i++){ var k=cfg.cons[i]; if(k.a*x+k.b*y>k.c+1e-9) return false; } return true; }
+function zOf(cfg,x,y){ return cfg.obj[0]*x+cfg.obj[1]*y; }
+function region(cfg){
+  var L=cfg.cons.concat([{a:-1,b:0,c:0},{a:0,b:-1,c:0}]), P=[];
+  for(var i=0;i<L.length;i++) for(var j=i+1;j<L.length;j++){ var p=L[i],q=L[j], d=p.a*q.b-q.a*p.b; if(Math.abs(d)<1e-12) continue;
+    var x=(p.c*q.b-q.c*p.b)/d, y=(p.a*q.c-q.a*p.c)/d; x=Math.abs(x)<1e-9?0:x; y=Math.abs(y)<1e-9?0:y;
+    if(feas(cfg,x,y) && !P.some(function(r){ return Math.abs(r[0]-x)<1e-7&&Math.abs(r[1]-y)<1e-7; })) P.push([x,y]); }
+  var cx=0,cy=0; P.forEach(function(p){cx+=p[0];cy+=p[1];}); cx/=P.length; cy/=P.length;
+  return P.sort(function(a,b){ return Math.atan2(a[1]-cy,a[0]-cx)-Math.atan2(b[1]-cy,b[0]-cx); });
+}
+function clipLine(k,cfg){
+  var P=[], add=function(x,y){ if(x>=-1e-9&&x<=cfg.xMax+1e-9&&y>=-1e-9&&y<=cfg.yMax+1e-9&&!P.some(function(r){return Math.abs(r[0]-x)<1e-7&&Math.abs(r[1]-y)<1e-7;})) P.push([x,y]); };
+  if(k.b!==0){ add(0,k.c/k.b); add(cfg.xMax,(k.c-k.a*cfg.xMax)/k.b); }
+  if(k.a!==0){ add(k.c/k.a,0); add((k.c-k.b*cfg.yMax)/k.a,cfg.yMax); }
+  return P.length>=2?[P[0],P[1]]:null;
+}
+function planStatus(x){
+  var sent=[0,0], got=[0,0,0], cost=0;
+  for(var i=0;i<2;i++) for(var j=0;j<3;j++){ sent[i]+=x[i][j]; got[j]+=x[i][j]; cost+=x[i][j]*PLAN.c[i][j]; }
+  var ok=sent.every(function(v,i){ return v<=PLAN.dep[i].s; }) && got.every(function(v,j){ return v===PLAN.cus[j].d; });
+  return {sent:sent, got:got, cost:cost, ok:ok};
+}
+function planPoints(cost){ return Math.max(0,Math.round(PTS.plan[0]-3000*(cost/PLAN.opt-1))); }
+function tapPoints(cfg,best){ if(best===null) return 0; var zs=zOf(cfg,cfg.opt[0],cfg.opt[1]); return Math.max(0,Math.round(PTS.tap[0]*(1-3*(1-best/zs)))); }
+function itemType(it){ return it.type||'sort'; }
+function maxScore(g){ var m=0; g.parts.forEach(function(p){ p.items.forEach(function(it){ var t=PTS[itemType(it)]; m+=t[0]+t[1]; }); }); return m; }
+function makeCode(name,gid,score,att){
+  var s=SECRET+'|'+String(name).trim().toLowerCase()+'|'+gid+'|'+score+'|'+att, h=2166136261;
+  for(var i=0;i<s.length;i++){ h=Math.imul(h^s.charCodeAt(i),16777619); }
+  return ('0000'+(h>>>0).toString(36).toUpperCase()).slice(-4)+'-G'+GAMES[gid].n+'A'+att;
+}
+function formLink(name,game,score,code){ return FORM.base+'&'+FORM.name+'='+encodeURIComponent(name)+'&'+FORM.game+'='+encodeURIComponent(game)+'&'+FORM.score+'='+encodeURIComponent(score)+'&'+FORM.code+'='+encodeURIComponent(code); }
+function fmt(n){ return Number(n).toLocaleString('en-US',{maximumFractionDigits:2}); }
+function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
+function esc(t){ return String(t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+/* ---------- Engine ---------- */
+var app=document.getElementById('app'), S={timer:null};
+function el(h){ app.innerHTML=h; window.scrollTo(0,0); }
+function $(id){ return document.getElementById(id); }
+function onAll(sel,fn){ Array.prototype.forEach.call(app.querySelectorAll(sel),function(b){ b.addEventListener('click',function(){ fn(b); }); }); }
+function stopTimer(){ clearInterval(S.timer); }
+function startTimer(sec,onEnd){
+  stopTimer(); S.left=sec; var end=Date.now()+sec*1000;
+  S.timer=setInterval(function(){ S.left=Math.max(0,(end-Date.now())/1000); var tb=$('tb'), tt=$('tt');
+    if(tb){ tb.style.width=(S.left/sec*100)+'%'; tb.className=S.left<Math.min(10,sec/3)?'low':''; } if(tt) tt.textContent=Math.ceil(S.left);
+    if(S.left<=0){ stopTimer(); onEnd(); } },200);
+}
+function flatten(g){ var q=[]; g.parts.forEach(function(p,pi){ if(p.intro) q.push({kind:'intro',p:p,pi:pi}); p.items.forEach(function(it,ii){ q.push({kind:'item',p:p,pi:pi,ii:ii,it:it}); }); }); return q; }
+function hud(e,time){
+  return '<div class="hud"><span class="eyebrow">Part '+(e.pi+1)+' of '+S.g.parts.length+' · '+e.p.name+(e.p.items.length>1?' · '+(e.ii+1)+'/'+e.p.items.length:'')+'</span><b>'+fmt(S.score)+'</b></div>'+
+    (time?'<div class="timer"><div class="bar"><i id="tb"></i></div><b id="tt">'+time+'</b></div>':'');
+}
+function award(e,pts){ S.score+=pts; S.partPts[e.pi]+=pts; }
+function advance(){ S.pos++; step(); }
+function nextBtn(){ return '<button id="nx">'+(S.pos===S.seq.length-1?'See my result':'Next')+'</button>'; }
+function bindNext(){ var b=$('nx'); if(b){ b.addEventListener('click',advance); b.focus(); } }
+
+function start(gid,name){
+  var a=parseInt(store('or_att_'+gid)||'0',10)+1; store('or_att_'+gid,String(a)); store('or_name',name);
+  S={timer:null, gid:gid, g:GAMES[gid], name:name, seq:flatten(GAMES[gid]), pos:0, score:0, attempt:a, partPts:GAMES[gid].parts.map(function(){return 0;})};
+  step();
+}
+function step(){
+  stopTimer(); S.locked=false;
+  if(S.pos>=S.seq.length) return final();
+  var e=S.seq[S.pos];
+  if(e.kind==='intro') return partIntro(e);
+  ({sort:renderSort, mc:renderMC, num:renderNum, plan:renderPlan, tap:renderTap})[itemType(e.it)](e);
+}
+function partIntro(e){
+  el('<div class="card"><span class="eyebrow">Part '+(e.pi+1)+' of '+S.g.parts.length+'</span><h2>'+e.p.name+'</h2>'+(e.p.art?'<div class="art">'+e.p.art+'</div>':'')+'<p>'+e.p.intro+'</p>'+
+    (e.p.bins?'<p class="muted">Your choices: '+e.p.bins.join(' · ')+'</p>':'')+'<button id="go">Start part '+(e.pi+1)+'</button></div>');
+  var b=$('go'); b.addEventListener('click',advance); b.focus();
+}
+
+/* Sort cards */
+function renderSort(e){
+  var p=e.p, it=e.it;
+  el('<div class="card">'+hud(e,p.time)+(it.art?'<div class="art">'+it.art+'</div>':'')+(it.t?'<div class="stmt">'+it.t+'</div>':'')+
+    '<div class="bins'+(p.bins.length===3?' three':'')+'">'+p.bins.map(function(b,i){ return '<button class="bin" data-i="'+i+'">'+b+'</button>'; }).join('')+'</div><div id="fb"></div></div>');
+  onAll('.bin',function(b){ answerSort(e,parseInt(b.getAttribute('data-i'),10)); });
+  startTimer(p.time,function(){ answerSort(e,null); });
+}
+function answerSort(e,i){
+  if(S.locked) return; S.locked=true; stopTimer();
+  var it=e.it, ok=i===it.a, pts=ok?PTS.sort[0]+Math.round(PTS.sort[1]*S.left/e.p.time):0; award(e,pts);
+  onAll('.bin',function(){}); Array.prototype.forEach.call(app.querySelectorAll('.bin'),function(b,k){ b.disabled=true; b.style.opacity=1; if(k===it.a) b.classList.add('right'); else if(k===i) b.classList.add('wrong'); });
+  $('fb').innerHTML='<div class="why"><b>'+(ok?'Correct, +'+pts:(i===null?'Time is up':'Not this one'))+'</b><span>'+it.why+'</span></div>'+(ok?'':nextBtn());
+  if(ok) setTimeout(function(){ if(S.seq[S.pos]===e) advance(); },1300); else bindNext();
+}
+
+/* Multiple choice */
+function renderMC(e){
+  var it=e.it;
+  el('<div class="card">'+hud(e,it.time)+(it.art?'<div class="art">'+it.art+'</div>':'')+'<div class="stmt">'+it.q+'</div><div class="opts">'+
+    it.opts.map(function(o,i){ return '<button class="opt" data-i="'+i+'">'+o+'</button>'; }).join('')+'</div><div id="fb"></div></div>');
+  onAll('.opt',function(b){ answerMC(e,parseInt(b.getAttribute('data-i'),10)); });
+  startTimer(it.time,function(){ answerMC(e,null); });
+}
+function answerMC(e,i){
+  if(S.locked) return; S.locked=true; stopTimer();
+  var it=e.it, ok=i===it.a, pts=ok?PTS.mc[0]+Math.round(PTS.mc[1]*S.left/it.time):0; award(e,pts);
+  Array.prototype.forEach.call(app.querySelectorAll('.opt'),function(b,k){ b.disabled=true; b.style.opacity=1; if(k===it.a) b.classList.add('right'); else if(k===i) b.classList.add('wrong'); });
+  $('fb').innerHTML='<div class="why"><b>'+(ok?'Correct, +'+pts:(i===null?'Time is up':'Not this one'))+'</b><span>'+it.why+'</span></div>'+nextBtn();
+  bindNext();
+}
+
+/* Numeric answer */
+function renderNum(e){
+  var it=e.it;
+  el('<div class="card">'+hud(e,it.time)+'<div class="stmt">'+it.q+'</div><div class="data">'+it.data.map(function(d){ return '<div><span>'+d[0]+'</span><strong>'+d[1]+'</strong></div>'; }).join('')+'</div>'+
+    '<form id="nf" class="field"><label for="ans">Your answer ('+it.unit+')</label><input type="number" id="ans" inputmode="decimal" step="any" required><button type="submit">Submit</button></form><div id="fb"></div></div>');
+  $('nf').addEventListener('submit',function(ev){ ev.preventDefault(); answerNum(e,parseFloat($('ans').value)); });
+  startTimer(it.time,function(){ answerNum(e,NaN); });
+}
+function answerNum(e,v){
+  if(S.locked) return; S.locked=true; stopTimer();
+  var it=e.it, ok=Math.abs(v-it.ans)<0.01, pts=ok?PTS.num[0]+Math.round(PTS.num[1]*S.left/it.time):0; award(e,pts);
+  $('nf').querySelector('button').disabled=true; $('ans').disabled=true;
+  $('fb').innerHTML='<div class="why"><b>'+(ok?'Correct, +'+pts:(isNaN(v)?'Time is up':'Not quite: the answer is '+fmt(it.ans)+' '+it.unit))+'</b><span>'+it.why+'</span></div>'+nextBtn();
+  bindNext();
+}
+
+/* Transport planner */
+function planNet(x){
+  var Dp=[[64,62],[64,150]], Cu=[[336,40],[336,106],[336,172]], s='<rect width="400" height="210" fill="'+C.soft+'"/>';
+  for(var i=0;i<2;i++) for(var j=0;j<3;j++){ var a=[Dp[i][0]+24,Dp[i][1]], b=[Cu[j][0]-16,Cu[j][1]], v=x[i][j], t=i?0.78:0.5, lx=a[0]+(b[0]-a[0])*t, ly=a[1]+(b[1]-a[1])*t;
+    s+='<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="'+(v?C.teal:'#a9bac7')+'" stroke-width="'+(v?2+v/25*9:1.5)+'"'+(v?'':' stroke-dasharray="4 4"')+' stroke-linecap="round"/>';
+    s+='<rect x="'+(lx-15)+'" y="'+(ly-9)+'" width="30" height="18" rx="9" fill="#fff" stroke="'+C.line+'"/>'+txt(lx,ly+4,'€'+PLAN.c[i][j],{s:11,w:600}); }
+  PLAN.dep.forEach(function(d,i){ s+=house(Dp[i][0],Dp[i][1],C.ink,'#fff')+txt(Dp[i][0],Dp[i][1]+32,d.n+' · '+d.s,{s:12,w:600}); });
+  PLAN.cus.forEach(function(c,j){ s+='<circle cx="'+Cu[j][0]+'" cy="'+Cu[j][1]+'" r="16" fill="'+C.teal+'"/>'+txt(Cu[j][0],Cu[j][1]+5,c.n,{s:14,w:600,c:'#fff'})+txt(Cu[j][0]+22,Cu[j][1]+5,c.d,{s:12,w:600,a:'start'}); });
+  return svg(400,210,s);
+}
+function chipCls(v,target,allowLess){ return v===target?'ok':(v>target?'over':(allowLess?'low':'low')); }
+function drawPlan(){
+  var x=S.plan, st=planStatus(x);
+  $('pnet').innerHTML=planNet(x);
+  $('pchips').innerHTML=PLAN.dep.map(function(d,i){ return '<span class="chip '+chipCls(st.sent[i],d.s)+'">'+d.n+' sends '+st.sent[i]+' of '+d.s+'</span>'; }).join('')+
+    PLAN.cus.map(function(c,j){ return '<span class="chip '+chipCls(st.got[j],c.d)+'">'+c.n+' gets '+st.got[j]+' of '+c.d+'</span>'; }).join('');
+  for(var i=0;i<2;i++) for(var j=0;j<3;j++) $('q'+i+j).textContent=x[i][j];
+  $('pcost').textContent='€'+fmt(st.cost); $('psub').disabled=!st.ok;
+}
+function renderPlan(e){
+  S.plan=[[0,0,0],[0,0,0]]; var lanes='';
+  for(var i=0;i<2;i++) for(var j=0;j<3;j++) lanes+='<div class="lane"><span>'+PLAN.dep[i].n+' → '+PLAN.cus[j].n+'<small>€'+PLAN.c[i][j]+' per unit</small></span><button class="step" data-i="'+i+'" data-j="'+j+'" data-d="-1" aria-label="Send 5 fewer from '+PLAN.dep[i].n+' to '+PLAN.cus[j].n+'">−</button><span class="qty" id="q'+i+j+'">0</span><button class="step" data-i="'+i+'" data-j="'+j+'" data-d="1" aria-label="Send 5 more from '+PLAN.dep[i].n+' to '+PLAN.cus[j].n+'">+</button></div>';
+  el('<div class="card">'+hud(e,e.it.time)+'<div class="art" id="pnet"></div><div class="chips" id="pchips"></div><div class="lanes">'+lanes+'</div>'+
+    '<div class="hud"><span>Total cost</span><b id="pcost">€0</b></div><button id="psub" disabled>Submit plan</button><div id="fb"></div></div>');
+  onAll('.step',function(b){ if(S.locked) return; var i=+b.getAttribute('data-i'), j=+b.getAttribute('data-j'), d=+b.getAttribute('data-d');
+    S.plan[i][j]=Math.max(0,Math.min(Math.min(PLAN.dep[i].s,PLAN.cus[j].d),S.plan[i][j]+d*PLAN.step)); drawPlan(); });
+  $('psub').addEventListener('click',function(){ finishPlan(e); });
+  drawPlan(); startTimer(e.it.time,function(){ finishPlan(e); });
+}
+function finishPlan(e){
+  if(S.locked) return; S.locked=true; stopTimer();
+  var st=planStatus(S.plan), pts=st.ok?planPoints(st.cost):0; award(e,pts);
+  var best='<table><thead><tr><th>Optimal plan</th>'+PLAN.cus.map(function(c){ return '<th>'+c.n+'</th>'; }).join('')+'</tr></thead><tbody>'+
+    PLAN.dep.map(function(d,i){ return '<tr><td>'+d.n+'</td>'+PLAN.best[i].map(function(v){ return '<td>'+v+'</td>'; }).join('')+'</tr>'; }).join('')+'</tbody></table>';
+  el('<div class="card">'+hud(e,0)+'<div class="verdict '+(pts>=900?'good':pts>0?'':'bad')+'">'+(!st.ok?'Plan not feasible':st.cost===PLAN.opt?'Optimal plan':pts>=700?'Close to optimal':'Feasible but costly')+'</div>'+
+    '<div class="data"><div><span>Your total cost</span><strong>'+(st.ok?'€'+fmt(st.cost):'not feasible')+'</strong></div><div><span>Minimum cost</span><strong>€'+PLAN.opt+'</strong></div><div><span>Points</span><strong>+'+pts+'</strong></div></div>'+
+    '<div class="art">'+planNet(PLAN.best)+'</div>'+best+'<div class="why"><span>'+PLAN.why+'</span></div>'+nextBtn()+'</div>');
+  bindNext();
+}
+
+/* Tap on the chart */
+function chart(cfg,marks,reveal){
+  var W=320,H=290,L=30,R=12,T=12,B=28,pw=W-L-R,ph=H-T-B, s='<rect width="'+W+'" height="'+H+'" fill="#fff"/>';
+  function X(x){ return L+x/cfg.xMax*pw; } function Y(y){ return T+ph-y/cfg.yMax*ph; }
+  for(var i=0;i<=cfg.xMax;i++) s+='<line x1="'+X(i)+'" y1="'+Y(0)+'" x2="'+X(i)+'" y2="'+Y(cfg.yMax)+'" stroke="#e6ecf0"/>'+txt(X(i),Y(0)+16,i,{s:10,c:C.muted});
+  for(var j=0;j<=cfg.yMax;j++) s+='<line x1="'+X(0)+'" y1="'+Y(j)+'" x2="'+X(cfg.xMax)+'" y2="'+Y(j)+'" stroke="#e6ecf0"/>'+txt(X(0)-7,Y(j)+4,j,{s:10,c:C.muted,a:'end'});
+  s+='<polygon points="'+region(cfg).map(function(p){ return X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1); }).join(' ')+'" fill="'+C.teal+'" fill-opacity=".16" stroke="'+C.teal+'" stroke-width="1.5"/>';
+  cfg.cons.forEach(function(k){ var g=clipLine(k,cfg); if(g) s+='<line x1="'+X(g[0][0])+'" y1="'+Y(g[0][1])+'" x2="'+X(g[1][0])+'" y2="'+Y(g[1][1])+'" stroke="'+C.ink+'" stroke-width="1.3" stroke-opacity=".6"/>';
+    s+='<text x="'+X(k.lx)+'" y="'+Y(k.ly)+'" font-size="11" font-weight="600" text-anchor="'+k.an+'" fill="'+C.ink+'" stroke="#fff" stroke-width="3" paint-order="stroke" font-family="IBM Plex Sans,system-ui,sans-serif">'+k.l+'</text>'; });
+  s+='<path d="M'+X(0)+' '+Y(cfg.yMax)+'V'+Y(0)+'H'+X(cfg.xMax)+'" stroke="'+C.ink+'" stroke-width="1.5" fill="none"/>'+txt(X(cfg.xMax)-2,Y(0)-6,'x',{s:12,w:600,a:'end'})+txt(X(0)+8,Y(cfg.yMax)+12,'y',{s:12,w:600,a:'start'});
+  if(cfg.snap===1) for(var a=0;a<=cfg.xMax;a++) for(var b=0;b<=cfg.yMax;b++) s+='<circle cx="'+X(a)+'" cy="'+Y(b)+'" r="3.5" fill="'+(feas(cfg,a,b)?C.ink:'#c3cfd8')+'"/>';
+  if(reveal){ if(cfg.lpOpt) s+='<circle cx="'+X(cfg.lpOpt[0])+'" cy="'+Y(cfg.lpOpt[1])+'" r="7" fill="none" stroke="'+C.teal+'" stroke-width="2.5"/>';
+    s+=star(X(cfg.opt[0]),Y(cfg.opt[1]),12,C.good); }
+  marks.forEach(function(m,n){ var cx=X(m.x), cy=Y(m.y);
+    s+=m.ok?'<circle cx="'+cx+'" cy="'+cy+'" r="8" fill="'+C.orange+'" stroke="#fff" stroke-width="1.5"/>'+txt(cx,cy+4,n+1,{s:10,w:600,c:'#fff'})
+           :'<path d="M'+(cx-6)+' '+(cy-6)+'l12 12M'+(cx+6)+' '+(cy-6)+'l-12 12" stroke="'+C.bad+'" stroke-width="3"/>'; });
+  return {svg:svg(W,H,s), W:W, H:H, L:L, R:R, T:T, B:B};
+}
+function nice(v){ return Math.round(v*100)/100; }
+function tapList(cfg,marks,done){
+  if(!marks.length) return '<p class="muted">'+(done?'No taps made.':'No taps yet. 3 left.')+'</p>';
+  return '<table><tbody>'+marks.map(function(m,n){ return '<tr><td>Tap '+(n+1)+': ('+nice(m.x)+', '+nice(m.y)+')</td><td>'+(m.ok?'Z = '+fmt(m.z):'outside the region')+'</td></tr>'; }).join('')+'</tbody></table>'+
+    (marks.length<3&&!done?'<p class="muted">'+(3-marks.length)+' tap'+(marks.length===2?'':'s')+' left.</p>':'');
+}
+function renderTap(e){
+  var cfg=e.it.cfg; S.marks=[];
+  el('<div class="card">'+hud(e,e.it.time)+'<p>'+cfg.story+'</p><div class="art tap" id="cbox"></div><p class="muted">'+cfg.legend+'</p><div id="tlist"></div><button id="lock" class="ghost" disabled>Lock in my best point</button><div id="fb"></div></div>');
+  function draw(){ $('cbox').innerHTML=chart(cfg,S.marks,false).svg; $('tlist').innerHTML=tapList(cfg,S.marks); $('lock').disabled=!S.marks.some(function(m){return m.ok;}); }
+  $('cbox').addEventListener('click',function(ev){
+    if(S.locked) return; var sv=$('cbox').querySelector('svg'), r=sv.getBoundingClientRect(), g=chart(cfg,[],false);
+    var sx=(ev.clientX-r.left)/r.width*g.W, sy=(ev.clientY-r.top)/r.height*g.H;
+    var x=(sx-g.L)/(g.W-g.L-g.R)*cfg.xMax, y=(g.H-g.B-sy)/(g.H-g.T-g.B)*cfg.yMax;
+    x=Math.min(cfg.xMax,Math.max(0,Math.round(x/cfg.snap)*cfg.snap)); y=Math.min(cfg.yMax,Math.max(0,Math.round(y/cfg.snap)*cfg.snap));
+    var ok=feas(cfg,x,y); S.marks.push({x:x,y:y,ok:ok,z:ok?zOf(cfg,x,y):null}); draw();
+    if(S.marks.length>=3) finishTap(e);
+  });
+  $('lock').addEventListener('click',function(){ finishTap(e); });
+  draw(); startTimer(e.it.time,function(){ finishTap(e); });
+}
+function finishTap(e){
+  if(S.locked) return; S.locked=true; stopTimer();
+  var cfg=e.it.cfg, best=null; S.marks.forEach(function(m){ if(m.ok&&(best===null||m.z>best)) best=m.z; });
+  var pts=tapPoints(cfg,best), zs=zOf(cfg,cfg.opt[0],cfg.opt[1]); award(e,pts);
+  $('cbox').innerHTML=chart(cfg,S.marks,true).svg; $('lock').remove(); $('tlist').innerHTML=tapList(cfg,S.marks,true)+'<p class="muted">Green star: the optimum'+(cfg.lpOpt?' · Teal ring: the LP corner':'')+'</p>';
+  $('fb').innerHTML='<div class="verdict '+(pts===PTS.tap[0]?'good':pts>0?'':'bad')+'">'+(best===null?'No feasible point':best===zs?'You found the optimum':'Best Z = '+fmt(best)+', optimum Z = '+fmt(zs))+'</div><div class="why"><b>+'+pts+' points</b><span>'+cfg.why+'</span></div>'+nextBtn();
+  bindNext();
+}
+
+/* ---------- Screens ---------- */
+function final(){
+  stopTimer();
+  var g=S.g, max=maxScore(g), frac=S.score/max, tier=TIERS.filter(function(t){ return frac>=t[0]; })[0], code=makeCode(S.name,S.gid,S.score,S.attempt);
+  var label='Game '+g.n+': '+g.title, next=ORDER[g.n];
+  el('<div class="card hero"><div class="art">'+g.art(true)+'</div><span class="eyebrow">Game '+g.n+' complete · '+esc(S.name)+'</span><div class="big">'+fmt(S.score)+'</div><p class="muted">out of '+fmt(max)+' points</p><h2>'+tier[1]+'</h2><p>'+tier[2]+'</p></div>'+
+    '<div class="card"><div class="field"><span class="muted">Your result code</span><div class="code">'+code+'</div></div>'+
+    '<a class="btn" href="'+esc(formLink(S.name,label,S.score,code))+'" target="_blank" rel="noopener">Send my score to the board</a><p class="muted">A form opens with your result filled in. Press Submit there to appear on the board.</p></div>'+
+    '<div class="card"><span class="eyebrow">Your parts</span><table><tbody>'+g.parts.map(function(p,i){ return '<tr><td>'+(i+1)+'. '+p.name+'</td><td>'+fmt(S.partPts[i])+'</td></tr>'; }).join('')+'</tbody></table></div>'+
+    '<footer><a href="#">All games</a>'+(next?'<span>Next in class: '+GAMES[next].title+'</span>':'')+'</footer>');
+}
+function intro(gid){
+  stopTimer(); var g=GAMES[gid], items=0; g.parts.forEach(function(p){ items+=p.items.length; });
+  el('<div class="card hero"><div class="art">'+g.art(true)+'</div><span class="eyebrow">Game '+g.n+' of 3 · '+g.where+'</span><h1>'+g.title+'</h1><p class="muted">'+g.blurb+'</p></div>'+
+    '<div class="stats"><div><b>'+g.parts.length+'</b>parts</div><div><b>'+g.minutes+'</b>minutes</div><div><b>'+fmt(maxScore(g))+'</b>points to win</div></div>'+
+    '<div class="card"><span class="eyebrow">What you will do</span><ol>'+g.parts.map(function(p){ return '<li><b>'+p.name+'.</b> '+p.sum+'</li>'; }).join('')+'</ol><p class="muted">Every round has a clock. Faster correct answers earn a small bonus.</p></div>'+
+    '<form class="card" id="f"><div class="field"><label for="nm">Your name, as it should appear on the board</label><input type="text" id="nm" maxlength="24" autocomplete="off" required value="'+esc(store('or_name')||'')+'"></div><button type="submit">Start game '+g.n+'</button></form>'+
+    '<footer><a href="#">All games</a><a href="#host">Lecturer view</a></footer>');
+  $('f').addEventListener('submit',function(ev){ ev.preventDefault(); var n=$('nm').value.trim(); if(n) start(gid,n); });
+}
+function home(){
+  stopTimer();
+  el('<div class="card hero"><div class="art">'+netArt(true)+'</div><span class="eyebrow">Operations Research in Transportation</span><h1>Lecture games</h1><p class="muted">Three short games, one after each section of the lecture. Scan the QR code on the slide when your lecturer shows it.</p></div>'+
+    '<div class="games">'+ORDER.map(function(id){ var g=GAMES[id]; return '<a class="card game" href="#'+id+'"><div class="art">'+g.art(false)+'</div><div><span class="eyebrow">Game '+g.n+' · '+g.where.split(' · ')[0]+'</span><h2>'+g.title+'</h2><p class="muted">'+g.blurb+'</p></div></a>'; }).join('')+'</div>'+
+    '<footer><a href="#host">Lecturer view</a></footer>');
+}
+function host(){
+  stopTimer();
+  el('<div class="card"><span class="eyebrow">Lecturer view</span><h1>OR in Transportation</h1><p>Show a code, students scan it and play. Results arrive in the Google Form’s response sheet.</p><div class="qrs">'+
+    ORDER.map(function(id){ return '<div><div id="qr-'+id+'"></div><b>Game '+GAMES[id].n+': '+GAMES[id].title+'</b><p class="muted">'+GAMES[id].where+'</p></div>'; }).join('')+'</div></div>'+
+    '<div class="card"><span class="eyebrow">Check a result code</span><p class="muted">A genuine code matches the name, game and score. Its ending shows the game and the attempt (G2A1 is game 2, first attempt).</p>'+
+    '<form id="vf" class="field"><label for="vn">Name</label><input type="text" id="vn" autocomplete="off" required><label for="vg">Game</label><select id="vg">'+ORDER.map(function(id){ return '<option value="'+id+'">Game '+GAMES[id].n+': '+GAMES[id].title+'</option>'; }).join('')+'</select>'+
+    '<label for="vs">Score</label><input type="number" id="vs" required><label for="vc">Code</label><input type="text" id="vc" autocomplete="off" required><button type="submit">Check</button></form><div id="vr"></div></div>'+
+    '<footer><a href="#">All games</a></footer>');
+  ORDER.forEach(function(id){ var box=$('qr-'+id); if(window.qrcode){ try{ var q=qrcode(0,'M'); q.addData(BASE+'#'+id); q.make(); box.innerHTML=q.createImgTag(5,8); }catch(err){} } });
+  $('vf').addEventListener('submit',function(ev){ ev.preventDefault();
+    var c=$('vc').value.trim().toUpperCase(), gid=$('vg').value, m=c.match(/-G(\d)A(\d+)$/), ok=false;
+    if(m) ok=makeCode($('vn').value,gid,parseInt($('vs').value,10),parseInt(m[2],10))===c;
+    $('vr').innerHTML='<div class="verdict '+(ok?'good':'bad')+'">'+(ok?'Genuine, attempt '+m[2]:'Does not match')+'</div>'; });
+}
+function route(){ var h=location.hash.replace('#',''); if(GAMES[h]) intro(h); else if(h==='host') host(); else home(); }
+window.addEventListener('hashchange',route);
+route();
+</script>
+</body>
+</html>
