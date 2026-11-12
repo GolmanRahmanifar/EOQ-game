@@ -184,7 +184,7 @@ var PLAN = {dep:[{n:'North',s:35},{n:'South',s:25}], cus:[{n:'A',d:20},{n:'B',d:
   why:'South has only 25 units, and both A and B want its cheap lanes. South saves €3 per unit on B (€2 instead of €5) but only €1 on A (€2 instead of €3), so it should serve all 15 of B first and then 10 of A. North covers the rest: 10 to A and 25 to C. Minimum cost €180. Filling the cheapest lane, South → A, first ends at €200.'};
 
 var GAMES = {
- model:{n:1, title:'Build the Model', where:'After slide 14 · Model building', minutes:6,
+ model:{n:1, title:'Build the Model', where:'Model building', minutes:6,
   blurb:'A courier in Rome plans tomorrow’s deliveries. Turn the story into an optimization model, piece by piece.',
   art:function(d){ return netArt(d); },
   parts:[
@@ -225,7 +225,7 @@ var GAMES = {
      opts:['Σ<sub>j</sub> x<sub>0j</sub> = 1','Σ<sub>j</sub> x<sub>0j</sub> ≤ K','x<sub>0j</sub> ≤ K for every j','Σ<sub>i</sub> x<sub>i0</sub> ≥ K'], a:1,
      why:'Each van that leaves uses one arc out of the depot, so the arcs leaving node 0 count the vans used. K is a resource parameter.'}]}
   ]},
- lp:{n:2, title:'Choose and Solve', where:'After slide 22 · Optimization techniques', minutes:8,
+ lp:{n:2, title:'Choose and Solve', where:'Optimization techniques', minutes:8,
   blurb:'Pick the right technique for each transport problem, then solve a small transportation problem by hand.',
   art:function(d){ return bipArt(d); },
   parts:[
@@ -255,7 +255,7 @@ var GAMES = {
     intro:'Two depots supply three customers. Choose how many units to send on each lane, in steps of 5. Every customer must get exactly what it ordered and no depot can send more than it has. Lowest total cost wins. You have four minutes.',
     items:[{type:'plan', time:240}]}
   ]},
- optima:{n:3, title:'Corner Hunter', where:'After slide 27 · Feasible regions and optima', minutes:6,
+ optima:{n:3, title:'Corner Hunter', where:'Feasible regions and optima', minutes:6,
   blurb:'Find optimal corners, whole-number solutions and the deepest valley.',
   art:function(d){ return cornerArt(d); },
   parts:[
